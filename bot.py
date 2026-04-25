@@ -29,10 +29,37 @@ async def health(_request: web.Request) -> web.Response:
     return web.json_response({"status": "ok"})
 
 
-async def run_web() -> web.AppRunner:
-    app = web.Application()
-    app.router.add_get("/health", health)
-    runner = web.AppRunner(app)
+async def root(_request: web.Request) -> web.Response:
+    return web.Response(text="Bunker bot is running. Use /health for status.")
+
+
+async def telegram_webhook(request: web.Request) -> web.Response:
+    telegram_app: Application = request.app["telegram_app"]
+
+    # Optional secret token validation for Telegram webhook requests.
+    if settings.webhook_secret:
+        header_secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+        if header_secret != settings.webhook_secret:
+            return web.Response(status=403, text="Forbidden")
+
+    try:
+        data = await request.json()
+        update = Update.de_json(data, telegram_app.bot)
+        await telegram_app.process_update(update)
+    except Exception:
+        logger.exception("Failed to process webhook update")
+        return web.Response(status=500, text="Update processing error")
+
+    return web.Response(status=200, text="OK")
+
+
+async def run_web(telegram_app: Application) -> web.AppRunner:
+    web_app = web.Application()
+    web_app["telegram_app"] = telegram_app
+    web_app.router.add_get("/", root)
+    web_app.router.add_get("/health", health)
+    web_app.router.add_post("/telegram", telegram_webhook)
+    runner = web.AppRunner(web_app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", settings.port)
     await site.start()
@@ -94,7 +121,7 @@ async def main() -> None:
     await app.initialize()
     await app.start()
 
-    runner = await run_web()
+    runner = await run_web(app)
 
     stop_event = asyncio.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
