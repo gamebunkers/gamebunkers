@@ -129,12 +129,14 @@ async def main() -> None:
             asyncio.get_running_loop().add_signal_handler(sig, stop_event.set)
 
     if settings.webhook_url:
+        webhook_target = f"{settings.webhook_url}/telegram"
         await app.bot.set_webhook(
-            url=f"{settings.webhook_url}/telegram",
+            url=webhook_target,
             secret_token=settings.webhook_secret or None,
             allowed_updates=Update.ALL_TYPES,
         )
-        logger.info("Webhook mode")
+        info = await app.bot.get_webhook_info()
+        logger.info("Webhook mode. target=%s pending=%s last_error=%s", info.url, info.pending_update_count, info.last_error_message)
     else:
         await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
         logger.info("Polling mode")

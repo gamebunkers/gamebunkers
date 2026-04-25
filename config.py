@@ -19,11 +19,15 @@ def _normalize_database_url(raw_url: str) -> str:
     return url
 
 
+def _normalize_webhook_url(raw_url: str) -> str:
+    return (raw_url or "").strip().rstrip("/")
+
+
 @dataclass(frozen=True)
 class Settings:
     bot_token: str = os.getenv("BOT_TOKEN", "")
     database_url: str = _normalize_database_url(os.getenv("DATABASE_URL", "sqlite+aiosqlite:///bunker.db"))
-    webhook_url: str = os.getenv("WEBHOOK_URL", "")
+    webhook_url: str = _normalize_webhook_url(os.getenv("WEBHOOK_URL", ""))
     webhook_secret: str = os.getenv("WEBHOOK_SECRET", "")
     port: int = int(os.getenv("PORT", "8080"))
     admin_user_ids: tuple[int, ...] = tuple(
