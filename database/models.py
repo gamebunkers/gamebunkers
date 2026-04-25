@@ -1,7 +1,7 @@
 import datetime as dt
 import enum
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.db import Base
@@ -17,10 +17,10 @@ class GameStatus(str, enum.Enum):
 class Game(Base):
     __tablename__ = "games"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    chat_id: Mapped[int] = mapped_column(Integer, index=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
     game_code: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     status: Mapped[GameStatus] = mapped_column(Enum(GameStatus), default=GameStatus.waiting)
-    host_user_id: Mapped[int] = mapped_column(Integer)
+    host_user_id: Mapped[int] = mapped_column(BigInteger)
     scenario_id: Mapped[int | None] = mapped_column(ForeignKey("game_scenarios.id"), nullable=True)
     bunker_capacity: Mapped[int] = mapped_column(Integer, default=0)
     current_round: Mapped[int] = mapped_column(Integer, default=1)
@@ -37,7 +37,7 @@ class Player(Base):
     __table_args__ = (UniqueConstraint("game_id", "user_id", name="uq_game_user"),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id"), index=True)
-    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
     username: Mapped[str | None] = mapped_column(String(255), nullable=True)
     full_name: Mapped[str] = mapped_column(String(255))
     is_alive: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -100,7 +100,7 @@ class GameScenario(Base):
 class PlayerStats(Base):
     __tablename__ = "player_stats"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
     total_games: Mapped[int] = mapped_column(Integer, default=0)
     wins: Mapped[int] = mapped_column(Integer, default=0)
     eliminations: Mapped[int] = mapped_column(Integer, default=0)
